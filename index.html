@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10069f">
+  <title>London Trip 2026 — Itinerary</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚇</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap">
+      <h1 id="tripTitle">London Trip 2026</h1>
+      <p class="trip-dates" id="tripDates"></p>
+    </div>
+  </header>
+
+  <nav class="day-strip-wrap" aria-label="Trip days">
+    <div class="wrap">
+      <div class="day-strip" id="dayStrip"></div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section id="dayView" class="day-view" aria-live="polite"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Edit <code>itinerary.js</code> to add or change plans. Sections &amp; more coming later.</p>
+    </div>
+  </footer>
+
+  <script src="itinerary.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
