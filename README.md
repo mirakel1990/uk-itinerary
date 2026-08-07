@@ -1,6 +1,8 @@
-# London Trip 2026 — Itinerary
+# London & Edinburgh 2026 — Itinerary
 
-A small, no-build website for planning our London trip, **23 September – 15 October 2026**.
+A small, no-build website for planning our London + Edinburgh trip, **23 September – 15 October 2026**.
+
+Live site: **https://mirakel1990.github.io/uk-itinerary/** (auto-redeploys on every push).
 
 Every day of the trip gets its own page: stops in time order, the transport options
 for reaching each stop (with minutes, and steps when walking), a Google Maps link per
@@ -15,7 +17,9 @@ stop, and a one-click **"Plot day in Google Maps"** route for the whole day.
 ## Editing the itinerary
 
 Everything lives in **`itinerary.js`** — the only file to touch day-to-day.
-The first two days currently contain **example data**; replace them with the real plan.
+It holds the live plan: the London photo-spot clusters, the wedding block
+(25–27 Sept), and the 4-day Edinburgh leg (3–6 Oct). Times are planning
+estimates — nudge them as bookings firm up.
 
 Add a day by keying it with its ISO date:
 
