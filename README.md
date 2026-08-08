@@ -28,7 +28,7 @@ Add a day by keying it with its ISO date:
   label: "Museums day",            // optional headline shown under the date
   items: [
     {
-      time: "10:00",               // 24h clock (optional — untimed stops sort last)
+      time: "10:00",               // 24h in the data, shown as "10:00 AM" (optional — untimed stops sort last)
       title: "Natural History Museum",
       notes: "Free entry; book a slot anyway.",
       location: {
@@ -49,7 +49,7 @@ Add a day by keying it with its ISO date:
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `time` | no | `"HH:MM"`, 24-hour. Items are sorted by it. |
+| `time` | no | `"HH:MM"`, 24-hour in the data; displayed as AM/PM. Items are sorted by it. |
 | `title` | yes | What you're doing. |
 | `notes` | no | Free text. |
 | `location.name` | no | Display name. |

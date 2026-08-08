@@ -142,6 +142,14 @@
     });
   }
 
+  // "14:00" → "2:00 PM" for display; the data stays 24-hour so sorting works.
+  function fmtTime(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+    if (!m) return hhmm;
+    var h = parseInt(m[1], 10);
+    return (h % 12 || 12) + ":" + m[2] + " " + (h < 12 ? "AM" : "PM");
+  }
+
   function renderHeader() {
     document.getElementById("tripTitle").textContent = DATA.title || "Trip";
     document.title = (DATA.title || "Trip") + " — Itinerary";
@@ -241,7 +249,7 @@
     var prev = null;
     items.forEach(function (it) {
       var li = el("li", "stop");
-      li.appendChild(el("div", "stop-time", it.time || "—"));
+      li.appendChild(el("div", "stop-time", it.time ? fmtTime(it.time) : "—"));
 
       var card = el("div", "stop-card");
       card.appendChild(el("h3", "stop-title", it.title || "Untitled stop"));

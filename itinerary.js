@@ -8,7 +8,7 @@
    STOP (ITEM) SHAPE
    -----------------
    {
-     time:  "14:00",                  // 24h clock; optional (untimed stops sort last)
+     time:  "14:00",                  // 24h in the data, shown as AM/PM; optional (untimed stops sort last)
      title: "Westminster Abbey",      // what you're doing
      notes: "Book tickets ahead.",    // optional free text
      location: {                      // where it is (used for all Google Maps links)
@@ -37,22 +37,35 @@ window.TRIP_DATA = {
     /* ---------------- LONDON, WEEK 1 ---------------- */
 
     "2026-09-23": {
-      label: "Arrival & the Canary Wharf base",
+      label: "Travel day — Manila → Singapore → London",
       items: [
         {
-          time: "14:00",
-          title: "Arrive & check in — Canning Town base",
-          notes: "Drop bags and get contactless/Oyster sorted. Update this entry with the actual hotel once booked.",
-          location: { name: "Canning Town", query: "Canning Town Station, London" },
+          time: "07:20",
+          title: "SQ915 — Manila → Singapore",
+          notes: "Departs NAIA Terminal 3 at 7:20 AM, lands Changi at 11:00 AM (no time-zone change). Aim to be at T3 by about 4:30 AM for bag drop. Times here are each airport's local clock.",
         },
         {
-          time: "18:00",
-          title: "Canary Wharf Roof Garden — free sunset walk",
-          notes: "Sunset is around 18:50 — the roof garden and the docks light up nicely.",
-          location: { name: "Crossrail Place Roof Garden", query: "Crossrail Place Roof Garden, Canary Wharf, London" },
+          time: "12:35",
+          title: "SQ318 — Singapore → London",
+          notes: "About 1 h 35 m to connect at Changi. Lands Heathrow at 7:30 PM UK time — 7 hours behind Manila/Singapore.",
+        },
+        {
+          time: "19:30",
+          title: "Land at Heathrow Terminal 2",
+          notes: "Border queue and bags will take a while at this hour — the Elizabeth line runs from directly below the terminal.",
+          location: { name: "Heathrow Terminal 2", query: "Heathrow Terminal 2, London" },
           transport: [
-            { mode: "tube", detail: "Jubilee line, 2 stops", minutes: 6 },
-            { mode: "tube", detail: "DLR via Poplar", minutes: 12 },
+            { mode: "plane", detail: "SQ318, 13 h 55 m nonstop" },
+          ],
+        },
+        {
+          time: "21:45",
+          title: "Check in — Canning Town base",
+          notes: "Drop bags and get contactless/Oyster sorted. Update this entry with the actual hotel once booked.",
+          location: { name: "Canning Town", query: "Canning Town Station, London" },
+          transport: [
+            { mode: "train", detail: "Elizabeth line to Custom House (direct or change at Paddington), then DLR one stop", minutes: 75 },
+            { mode: "taxi", detail: "Cab from T2 arrivals", minutes: 55 },
           ],
         },
       ],
@@ -395,7 +408,7 @@ window.TRIP_DATA = {
         {
           time: "17:45",
           title: "Calton Hill — free sweeping sunset view",
-          notes: "Sunset around 18:40 in early October — go up 45 min early for a spot.",
+          notes: "Sunset around 6:40 PM in early October — go up 45 min early for a spot.",
           location: { name: "Calton Hill", query: "Calton Hill, Edinburgh" },
           transport: [
             { mode: "walk", minutes: 25, steps: 2800 },
@@ -523,7 +536,7 @@ window.TRIP_DATA = {
         {
           time: "10:00",
           title: "Platform 9¾ — trolley photo",
-          notes: "Inside King's Cross station; queue is shortest before ~11:00. The shop is next to it.",
+          notes: "Inside King's Cross station; queue is shortest before ~11 AM. The shop is next to it.",
           location: { name: "Platform 9¾", query: "Platform 9 3/4, King's Cross Station, London" },
           transport: [
             { mode: "tube", detail: "Jubilee → H&C/District from West Ham", minutes: 35 },
@@ -663,16 +676,56 @@ window.TRIP_DATA = {
     },
 
     "2026-10-14": {
-      label: "Departure day ✈️",
+      label: "Departure day — SQ317 to Singapore ✈️",
       items: [
         {
-          time: "09:00",
-          title: "Pack up & check out",
+          time: "07:00",
+          title: "Check out — Canning Town base",
+          notes: "Early start — pack the night before. Breakfast at the airport once bags are dropped.",
+          location: { name: "Canning Town", query: "Canning Town Station, London" },
         },
         {
-          time: "12:00",
-          title: "Head to the airport",
-          notes: "From Canning Town: DLR runs direct to London City (~10 min); Heathrow is Jubilee → Elizabeth line (~55 min); Gatwick is Jubilee to London Bridge → Thameslink (~60 min).",
+          time: "08:20",
+          title: "Heathrow Terminal 2 — bag drop",
+          notes: "Aim for T2 about 3 hours before departure.",
+          location: { name: "Heathrow Terminal 2", query: "Heathrow Terminal 2, London" },
+          transport: [
+            { mode: "train", detail: "DLR one stop to Custom House, then Elizabeth line (direct or change at Paddington)", minutes: 75 },
+            { mode: "taxi", detail: "Pre-booked cab — easier with luggage in the morning peak", minutes: 70 },
+          ],
+        },
+        {
+          time: "11:20",
+          title: "SQ317 — London → Singapore",
+          notes: "Overnight leg: 13 h 10 m, lands Changi at 7:30 AM tomorrow (Singapore is 7 hours ahead).",
+        },
+      ],
+    },
+
+    "2026-10-15": {
+      label: "Homeward — Changi transit, then Manila",
+      items: [
+        {
+          time: "07:30",
+          title: "Land at Changi — transit",
+          notes: "4 h 25 m between flights — time for a proper breakfast airside. Times today are each airport's local clock.",
+          transport: [
+            { mode: "plane", detail: "SQ317, 13 h 10 m overnight" },
+          ],
+        },
+        {
+          time: "11:55",
+          title: "SQ912 — Singapore → Manila",
+          notes: "3 h 45 m home stretch; no time-zone change.",
+        },
+        {
+          time: "15:40",
+          title: "Land in Manila — NAIA Terminal 3",
+          notes: "Welcome home! 🎉",
+          location: { name: "NAIA Terminal 3", query: "Ninoy Aquino International Airport Terminal 3, Manila" },
+          transport: [
+            { mode: "plane", detail: "SQ912, 3 h 45 m" },
+          ],
         },
       ],
     },
