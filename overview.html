@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10069f">
+  <title>Overview — London 2026</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚇</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap">
+      <h1 id="tripTitle">London 2026</h1>
+      <p class="trip-dates" id="tripDates"></p>
+      <nav class="view-switch">
+        <a href="index.html" class="view-tab">Day by day</a>
+        <span class="view-tab active" aria-current="page">Overview</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="overviewStats" class="ov-stats"></section>
+    <section id="overviewBookings" class="ov-bookings"></section>
+    <section id="overview" class="ov-list" aria-live="polite"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Every day at a glance. Click any day to open it in full.</p>
+    </div>
+  </footer>
+
+  <script src="itinerary.js"></script>
+  <script src="overview.js"></script>
+</body>
+</html>
