@@ -1,2 +1,5 @@
 node_modules/
 .DS_Store
+
+# Local dev tooling (no-cache preview server) — not part of the published site
+.claude/

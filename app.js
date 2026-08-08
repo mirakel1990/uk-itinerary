@@ -79,13 +79,27 @@
     return null;
   }
 
+  // Full Google Maps directions, for opening in a new tab / the Maps app.
   function mapsDirectionsUrl(fromLoc, toLoc, travelmode) {
     var a = mapsPoint(fromLoc), b = mapsPoint(toLoc);
-    if (!a || !b) return null;
+    if (!a || !b || a === b) return null;
     var url = "https://www.google.com/maps/dir/?api=1" +
       "&origin=" + encodeURIComponent(a) +
       "&destination=" + encodeURIComponent(b);
     if (travelmode) url += "&travelmode=" + travelmode;
+    return url;
+  }
+
+  // Keyless embeddable directions (classic Maps URL with output=embed —
+  // the modern /maps/dir/ URLs refuse to load in an iframe).
+  function mapsEmbedDirectionsUrl(fromLoc, toLoc, travelmode) {
+    var a = mapsPoint(fromLoc), b = mapsPoint(toLoc);
+    if (!a || !b) return null;
+    if (a === b) return null; // no route from a place to itself
+    var flg = { walking: "w", transit: "r", driving: "d", bicycling: "b" }[travelmode];
+    var url = "https://maps.google.com/maps?saddr=" + encodeURIComponent(a) +
+      "&daddr=" + encodeURIComponent(b) + "&output=embed";
+    if (flg) url += "&dirflg=" + flg;
     return url;
   }
 
@@ -142,6 +156,61 @@
     });
   }
 
+  /* ---------- accommodation ---------- */
+
+  function stayForNight(iso) {
+    var stays = DATA.stays || [];
+    for (var i = 0; i < stays.length; i++) {
+      if (iso >= stays[i].firstNight && iso <= stays[i].lastNight) return stays[i];
+    }
+    return null;
+  }
+
+  function workForDay(iso) {
+    var blocks = DATA.workBlocks || [];
+    for (var i = 0; i < blocks.length; i++) {
+      if (iso >= blocks[i].firstDay && iso <= blocks[i].lastDay) return blocks[i];
+    }
+    return null;
+  }
+
+  function workCard(work) {
+    var card = el("aside", "work-card");
+    card.appendChild(el("p", "work-kicker", "💻 " + (work.label || "Work hours")));
+    if (work.localHours) card.appendChild(el("h3", "work-hours", work.localHours));
+    if (work.homeHours) card.appendChild(el("p", "work-meta", work.homeHours));
+    if (work.backBy) {
+      card.appendChild(el("p", "work-deadline", "⏰ Be back at the hotel by " + fmtTime(work.backBy)));
+    }
+    if (work.notes) card.appendChild(el("p", "work-notes", work.notes));
+    return card;
+  }
+
+  function stayCard(stay, iso) {
+    var DAY_MS = 24 * 60 * 60 * 1000;
+    var nights = Math.round((parseISO(stay.lastNight) - parseISO(stay.firstNight)) / DAY_MS) + 1;
+    var tonight = Math.round((parseISO(iso) - parseISO(stay.firstNight)) / DAY_MS) + 1;
+
+    var card = el("aside", "stay-card");
+    card.appendChild(el("p", "stay-kicker",
+      "🛏️ Accommodation" + (nights > 1 ? " · night " + tonight + " of " + nights : "")));
+    card.appendChild(el("h3", "stay-name", stay.name || "Somewhere to sleep"));
+
+    var meta = [];
+    if (stay.address) meta.push(stay.address);
+    if (stay.phone) meta.push("tel " + stay.phone);
+    if (meta.length) card.appendChild(el("p", "stay-meta", meta.join(" · ")));
+    if (stay.notes) card.appendChild(el("p", "stay-notes", stay.notes));
+
+    var url = mapsSearchUrl(stay.location);
+    if (url) {
+      var links = el("div", "stop-links");
+      links.appendChild(link(url, "maps-link", "Open in Google Maps"));
+      card.appendChild(links);
+    }
+    return card;
+  }
+
   // "14:00" → "2:00 PM" for display; the data stays 24-hour so sorting works.
   function fmtTime(hhmm) {
     var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
@@ -182,6 +251,65 @@
     });
   }
 
+  // Button that expands an embedded directions map inside the card.
+  // The iframe is only created on first open, so hidden maps cost nothing.
+  function routeToggle(card, embedUrl, label) {
+    var closedLabel = label || "Route from previous stop";
+    var btn = el("button", "map-toggle", closedLabel);
+    btn.type = "button";
+    var wrap = null;
+    btn.addEventListener("click", function () {
+      if (!wrap) {
+        wrap = el("div", "map-embed");
+        var frame = document.createElement("iframe");
+        frame.src = embedUrl;
+        frame.loading = "lazy";
+        frame.title = closedLabel;
+        frame.allowFullscreen = true;
+        wrap.appendChild(frame);
+        card.appendChild(wrap);
+      } else {
+        wrap.classList.toggle("collapsed");
+      }
+      var open = !wrap.classList.contains("collapsed");
+      btn.classList.toggle("open", open);
+      btn.textContent = open ? "Hide route map" : closedLabel;
+    });
+    return btn;
+  }
+
+  var BOOKING_LEVELS = {
+    required:    { emoji: "🎟️", label: "Book ahead" },
+    recommended: { emoji: "📋", label: "Worth booking" },
+  };
+
+  function bookingBadge(booking) {
+    var level = BOOKING_LEVELS[booking.level] || BOOKING_LEVELS.recommended;
+    var box = el("p", "booking booking-" + (booking.level || "recommended"));
+    box.appendChild(el("span", "booking-label", level.emoji + " " + level.label));
+    if (booking.notes) box.appendChild(el("span", "booking-notes", booking.notes));
+    if (booking.via) box.appendChild(el("span", "booking-via", "Where to book: " + booking.via));
+    return box;
+  }
+
+  // Collapsible list of extras (optional to-dos / must-try food), collapsed by default.
+  function detailsList(className, summaryLabel, entries) {
+    var box = el("details", className);
+    var sum = el("summary", null, summaryLabel + " (" + entries.length + ")");
+    box.appendChild(sum);
+    var ul = el("ul", "extra-list");
+    entries.forEach(function (e) {
+      var item = (typeof e === "string") ? { title: e } : e;
+      var li = el("li");
+      li.appendChild(el("span", "extra-title", item.title));
+      if (item.where) li.appendChild(el("span", "extra-where", item.where));
+      if (item.notes) li.appendChild(el("span", "extra-notes", item.notes));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    return box;
+  }
+
   function transportChip(opt) {
     var mode = MODES[opt.mode] || { emoji: "➡️", label: opt.mode || "Go" };
     var parts = [mode.label];
@@ -213,13 +341,32 @@
     headText.appendChild(el("h2", null, fmt(d, { weekday: "long", day: "numeric", month: "long" })));
     if (entry && entry.label) headText.appendChild(el("p", "day-label", entry.label));
     headText.appendChild(el("p", "day-count", items.length
-      ? items.length + (items.length === 1 ? " stop" : " stops")
+      ? (entry && entry.countLabel) || items.length + (items.length === 1 ? " stop" : " stops")
       : "Nothing planned yet"));
+    if (entry && entry.note) headText.appendChild(el("p", "day-note", entry.note));
+
+    // Roll up anything on this day that has to be booked in advance.
+    var needBooking = items.filter(function (it) {
+      return it.booking && it.booking.level === "required";
+    });
+    if (needBooking.length) {
+      var names = needBooking.map(function (it) {
+        return (it.booking.shortName || it.title).replace(/ —.*$/, "");
+      });
+      headText.appendChild(el("p", "day-booking",
+        "🎟️ Book ahead: " + names.join(", ")));
+    }
     header.appendChild(headText);
 
-    // Plot the whole day as one Google Maps route.
+    // The day starts wherever we woke up — the previous night's stay.
+    var wake = stayForNight(toISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)));
+    var wakeLoc = (wake && wake.location) || null;
+
+    // Plot the whole day as one Google Maps route, starting from the accommodation.
     var points = items.map(function (it) { return mapsPoint(it.location); })
       .filter(function (p) { return p; });
+    if (wakeLoc) points.unshift(mapsPoint(wakeLoc));
+    points = points.filter(function (p, i) { return i === 0 || p !== points[i - 1]; });
     if (points.length >= 2) {
       var allOptions = [];
       items.forEach(function (it) { (it.transport || []).forEach(function (o) { allOptions.push(o); }); });
@@ -235,6 +382,12 @@
     }
     dayView.appendChild(header);
 
+    var work = workForDay(iso);
+    if (work) dayView.appendChild(workCard(work));
+
+    var stay = stayForNight(iso);
+    if (stay) dayView.appendChild(stayCard(stay, iso));
+
     if (!items.length) {
       var empty = el("div", "empty");
       empty.appendChild(el("p", null, "A free day, for now."));
@@ -246,7 +399,7 @@
     }
 
     var list = el("ol", "timeline");
-    var prev = null;
+    var prev = wakeLoc ? { location: wakeLoc, fromStay: true } : null;
     items.forEach(function (it) {
       var li = el("li", "stop");
       li.appendChild(el("div", "stop-time", it.time ? fmtTime(it.time) : "—"));
@@ -257,6 +410,23 @@
         card.appendChild(el("p", "stop-place", "📍 " + it.location.name));
       }
       if (it.notes) card.appendChild(el("p", "stop-notes", it.notes));
+      if (it.booking) card.appendChild(bookingBadge(it.booking));
+
+      if (it.photos && it.photos.length) {
+        var photos = el("div", "photos");
+        it.photos.forEach(function (ph) {
+          var p = (typeof ph === "string") ? { src: ph } : ph;
+          var a = link(p.href || p.src, "photo", null);
+          var img = document.createElement("img");
+          img.src = p.src;
+          img.loading = "lazy";
+          img.alt = p.caption || "Reference photo";
+          a.appendChild(img);
+          if (p.caption) a.appendChild(el("span", "photo-caption", p.caption));
+          photos.appendChild(a);
+        });
+        card.appendChild(photos);
+      }
 
       if (it.transport && it.transport.length) {
         var chips = el("div", "transport");
@@ -264,12 +434,26 @@
         card.appendChild(chips);
       }
 
+      if ((it.optional && it.optional.length) || (it.food && it.food.length)) {
+        var extras = el("div", "extras");
+        if (it.optional && it.optional.length) {
+          extras.appendChild(detailsList("extra optional", "✨ Optional to-dos", it.optional));
+        }
+        if (it.food && it.food.length) {
+          extras.appendChild(detailsList("extra food", "🍽️ Must-try food", it.food));
+        }
+        card.appendChild(extras);
+      }
+
       var links = el("div", "stop-links");
       var searchUrl = mapsSearchUrl(it.location);
       if (searchUrl) links.appendChild(link(searchUrl, "maps-link", "Open in Google Maps"));
       if (prev) {
-        var dirUrl = mapsDirectionsUrl(prev.location, it.location, travelmodeFor(it.transport));
-        if (dirUrl) links.appendChild(link(dirUrl, "maps-link", "Directions from previous stop"));
+        var mode = travelmodeFor(it.transport);
+        var dirUrl = mapsDirectionsUrl(prev.location, it.location, mode);
+        if (dirUrl) links.appendChild(link(dirUrl, "maps-link", "Route in Google Maps"));
+        var embedUrl = mapsEmbedDirectionsUrl(prev.location, it.location, mode);
+        if (embedUrl) links.appendChild(routeToggle(card, embedUrl, prev.fromStay ? "Route from accommodation" : null));
       }
       if (links.childNodes.length) card.appendChild(links);
 
@@ -306,6 +490,144 @@
     if (dates.indexOf(today) !== -1) return today;
     return dates[0];
   }
+
+  /* ---------- search ---------- */
+
+  // Flatten every stop on every day into one searchable index, built once.
+  function buildSearchIndex() {
+    var index = [];
+    tripDates().forEach(function (d) {
+      var iso = toISO(d);
+      var entry = dayEntry(iso);
+      if (!entry) return;
+      var dayLabel = fmt(d, { weekday: "short", day: "numeric", month: "short" });
+
+      sortedItems(entry).forEach(function (it) {
+        var parts = [it.title, it.notes, entry.label];
+        if (it.location) parts.push(it.location.name, it.location.query);
+        (it.optional || []).forEach(function (x) { parts.push(x.title, x.where, x.notes); });
+        (it.food || []).forEach(function (x) { parts.push(x.title, x.where, x.notes); });
+        (it.transport || []).forEach(function (t) { parts.push(t.detail, t.mode); });
+        if (it.booking) parts.push(it.booking.notes, it.booking.via, "booking");
+
+        index.push({
+          iso: iso,
+          dayLabel: dayLabel,
+          title: it.title || "Untitled stop",
+          time: it.time,
+          place: it.location && it.location.name,
+          haystack: parts.filter(Boolean).join(" ").toLowerCase(),
+        });
+      });
+    });
+    return index;
+  }
+
+  var searchIndex = null;
+  var searchInput = document.getElementById("searchInput");
+  var searchResults = document.getElementById("searchResults");
+  var searchClear = document.getElementById("searchClear");
+
+  function runSearch(q) {
+    if (!searchIndex) searchIndex = buildSearchIndex();
+    var terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return searchIndex.filter(function (row) {
+      return terms.every(function (t) { return row.haystack.indexOf(t) !== -1; });
+    });
+  }
+
+  function renderSearchResults(q) {
+    searchResults.textContent = "";
+    var hits = runSearch(q);
+
+    if (!q.trim()) {
+      searchResults.hidden = true;
+      searchInput.setAttribute("aria-expanded", "false");
+      return;
+    }
+
+    if (!hits.length) {
+      searchResults.appendChild(el("p", "search-empty", "Nothing matches “" + q + "”."));
+    } else {
+      searchResults.appendChild(el("p", "search-count",
+        hits.length + (hits.length === 1 ? " match" : " matches")));
+
+      hits.slice(0, 40).forEach(function (hit) {
+        var row = el("button", "search-hit");
+        row.type = "button";
+        row.setAttribute("role", "option");
+        row.appendChild(el("span", "search-hit-title", hit.title));
+        var meta = hit.dayLabel + (hit.time ? " · " + fmtTime(hit.time) : "");
+        if (hit.place) meta += " · " + hit.place;
+        row.appendChild(el("span", "search-hit-meta", meta));
+        row.addEventListener("click", function () {
+          closeSearch();
+          selectDay(hit.iso);
+          highlightStop(hit.title);
+        });
+        searchResults.appendChild(row);
+      });
+
+      if (hits.length > 40) {
+        searchResults.appendChild(el("p", "search-count",
+          "…and " + (hits.length - 40) + " more. Try a more specific word."));
+      }
+    }
+
+    searchResults.hidden = false;
+    searchInput.setAttribute("aria-expanded", "true");
+  }
+
+  // Scroll to the matched stop on the newly-rendered day and flash it.
+  function highlightStop(title) {
+    var cards = dayView.querySelectorAll(".stop-card");
+    for (var i = 0; i < cards.length; i++) {
+      var h = cards[i].querySelector(".stop-title");
+      if (h && h.textContent === title) {
+        cards[i].scrollIntoView({ block: "center", behavior: "smooth" });
+        cards[i].classList.add("flash");
+        (function (card) {
+          setTimeout(function () { card.classList.remove("flash"); }, 1600);
+        })(cards[i]);
+        return;
+      }
+    }
+  }
+
+  function closeSearch() {
+    searchInput.value = "";
+    searchResults.hidden = true;
+    searchResults.textContent = "";
+    searchClear.hidden = true;
+    searchInput.setAttribute("aria-expanded", "false");
+  }
+
+  searchInput.addEventListener("input", function () {
+    searchClear.hidden = !searchInput.value;
+    renderSearchResults(searchInput.value);
+  });
+
+  searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeSearch();
+    if (e.key === "Enter") {
+      var first = searchResults.querySelector(".search-hit");
+      if (first) first.click();
+    }
+  });
+
+  searchClear.addEventListener("click", function () {
+    closeSearch();
+    searchInput.focus();
+  });
+
+  // Click outside closes the dropdown.
+  document.addEventListener("click", function (e) {
+    if (!searchResults.hidden && !e.target.closest(".search")) {
+      searchResults.hidden = true;
+      searchInput.setAttribute("aria-expanded", "false");
+    }
+  });
 
   renderHeader();
   renderStrip();
